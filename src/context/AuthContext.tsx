@@ -1,14 +1,30 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    type ReactNode,
+} from 'react';
 import { deleteToken, getMessaging } from 'firebase/messaging';
-// import { app } from 'src/lib/firebase';
+import { app } from 'src/lib/firebase';
+import { useNavigate } from 'react-router-dom';
+import type { SiteLocation } from './GlobalContext';
 
-type UserData = {
-    token: string;
-    // add other user properties you expect here
-    [key: string]: any;
-};
+export type UserData = {
+    _id: string
+    fullName: string
+    position: string
+    site: SiteLocation
+    department: string
+    nik: string
+    phone: string
+    salary: number
+    role: string
+    token: string
+}
+
 
 type AuthContextType = {
     isLoggedIn: boolean;
@@ -25,6 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<UserData | null>(null);
 
+
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userDataStr = localStorage.getItem('user');
@@ -37,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(null);
         }
         setIsLoading(false);
-    }, []);
+    }, [isLoggedIn]);
 
     const login = (userData: UserData) => {
         localStorage.setItem('token', userData.token);
@@ -48,8 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
-            // const messaging = getMessaging(app);
-            // await deleteToken(messaging);
+            const messaging = getMessaging(app);
+            await deleteToken(messaging);
             console.log('FCM token deleted');
         } catch (e) {
             console.error('Failed to delete FCM token', e);
@@ -59,10 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('user');
         setUser(null);
         setIsLoggedIn(false);
+
+
     };
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, isLoading, user, login, logout }}>
+        <AuthContext.Provider
+            value={{ isLoggedIn, isLoading, user, login, logout }}
+        >
             {children}
         </AuthContext.Provider>
     );

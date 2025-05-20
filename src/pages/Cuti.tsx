@@ -33,6 +33,7 @@ import type { User } from "./Users"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "src/components/ui/alert-dialog"
 import { ApiService } from "src/service/ApiService"
 import { ApiEndpoints } from "src/service/Endpoints"
+import { useAuth } from "src/context/AuthContext"
 
 
 export interface ApprovalData {
@@ -68,13 +69,19 @@ export interface Cuti {
 export default function CutiTable() {
     const [data, setData] = useState<Cuti[]>([])
     // const [userToEdit, setEditUser] = useState<Cuti>()
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [rowSelection, setRowSelection] = useState({})
     const [showDialog, setShowDialog] = useState(false)
+    const { user } = useAuth();
+    const [currentPage, setCurrentPage] = useState(1)
+    const [isMax, setIsMax] = useState(false)
+    const [inputValue, setInputValue] = useState("");
+    const [debouncedValue, setDebouncedValue] = useState(inputValue);
+    const [partialLoading, setPartialLoading] = useState(true)
     const columns: ColumnDef<Cuti>[] = [
         {
             accessorKey: 'account',
@@ -212,6 +219,9 @@ export default function CutiTable() {
             id: 'approve',
             cell: ({ row }) => {
                 const absensi = row.original
+                if ((row.original.pjoApproval && user?.role == 'pjo') || (row.original.managerApproval && user?.role == 'manager') || (user?.role == 'hrd') || (user?.role == 'admin')) {
+                    return null;
+                }
                 return <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button className="bg-green-600 hover:bg-gray-700 text-white">Setuju</Button>
@@ -234,6 +244,9 @@ export default function CutiTable() {
             id: 'reject',
             cell: ({ row }) => {
                 const absensi = row.original
+                if ((row.original.pjoApproval && user?.role == 'pjo') || (row.original.managerApproval && user?.role == 'manager') || (user?.role == 'hrd') || (user?.role == 'admin')) {
+                    return null;
+                }
                 return <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button className="bg-red-600 hover:bg-gray-700 text-white">Tolak</Button>
@@ -288,18 +301,34 @@ export default function CutiTable() {
         // },
     ]
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(inputValue)
+        }, 300); // debounce delay
+
+        return () => clearTimeout(handler);
+    }, [inputValue]);
+
+
+
+
     const fetchCutiList = async () => {
+        setPartialLoading(true)
         try {
             const response = await ApiService.post(ApiEndpoints.CUTI_LIST, {
-                status: "all"
+                status: "all",
+                page: currentPage,
+                search: debouncedValue,
+                limit: 10,
             })
             if (response.data.data.items) {
+                setIsMax(response.data.data.isMax)
                 setData(response.data.data.items)
             }
         } catch (err: any) {
             setError(err?.message ?? "Failed to fetch cuti list")
         } finally {
-            setLoading(false)
+            setPartialLoading(false)
         }
     }
 
@@ -334,7 +363,7 @@ export default function CutiTable() {
 
     useEffect(() => {
         fetchCutiList()
-    }, [])
+    }, [debouncedValue, currentPage])
 
     const table = useReactTable({
         data,
@@ -366,12 +395,12 @@ export default function CutiTable() {
     return (
         <div>
             <div className="flex items-center justify-between p-4">
-                {/* <Input
-                    placeholder="Filter by name..."
-                    value={(table.getColumn("fullName")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) => table.getColumn("fullName")?.setFilterValue(event.target.value)}
+                <Input
+                    placeholder="Filter berdasarkan nama..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                     className="max-w-sm"
-                /> */}
+                />
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -405,7 +434,9 @@ export default function CutiTable() {
                         /> */}
                 </div>
             </div>
-            <div className="rounded-md border">
+            {partialLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500"></div>
+            </div>) : <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -438,7 +469,7 @@ export default function CutiTable() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+            </div>}
             <div className="flex items-center justify-end space-x-2 p-4">
                 {/* <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
@@ -448,12 +479,20 @@ export default function CutiTable() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => {
+                            if (!partialLoading) {
+                                setCurrentPage(currentPage - 1)
+                            }
+                        }}
+                        disabled={currentPage === 1}
                     >
                         Previous
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        if (!partialLoading) {
+                            setCurrentPage(currentPage + 1)
+                        }
+                    }} disabled={isMax}>
                         Next
                     </Button>
                 </div>

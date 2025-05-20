@@ -56,7 +56,7 @@ const navItems = [
 ];
 
 export default function AppSidebar() {
-    const { logout, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+    const { logout, isLoggedIn, isLoading: isAuthLoading, user } = useAuth();
 
     // React Router hook to get current path
     const location = useLocation();
@@ -66,6 +66,13 @@ export default function AppSidebar() {
     const handleLogout = () => {
         logout();
     };
+
+    const filteredNavItems = navItems.filter((item) => {
+        if (item.title === "Setting") {
+            return user?.role === "admin";
+        }
+        return true;
+    });
 
     return (
         <Sidebar>
@@ -79,7 +86,7 @@ export default function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={navItems} currentPath={location.pathname} />
+                <NavMain items={filteredNavItems} currentPath={location.pathname} />
             </SidebarContent>
             <SidebarFooter>
                 <Button onClick={handleLogout} variant="secondary">

@@ -11,6 +11,7 @@ import { ApiEndpoints } from "src/service/Endpoints"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "src/components/ui/dialog"
 import { Button } from "./ui/button"
 import { UserFormContent } from "./UserFormContent"
+import { useAuth } from "src/context/AuthContext"
 
 export const formSchema = z.object({
     fullName: z.string().min(2),
@@ -49,6 +50,7 @@ export function UserForm({ mode, userToEdit, onUserSaved }: UserFormProps) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [sites, setSites] = useState<SiteLocation[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const { user } = useAuth()
 
     const defaultValues: Partial<UserFormValues> = {
         fullName: userToEdit?.fullName ?? "",
@@ -107,9 +109,9 @@ export function UserForm({ mode, userToEdit, onUserSaved }: UserFormProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant={mode === "add" ? "default" : "outline"}>
+                {user?.role === "admin" ? <Button variant={mode === "add" ? "default" : "outline"}>
                     {mode === "add" ? "Add User" : "Edit"}
-                </Button>
+                </Button> : null}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>

@@ -74,7 +74,7 @@ export interface Absensi {
 
 export default function AbsensiTable() {
     const [data, setData] = useState<Absensi[]>([])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const [sorting, setSorting] = useState<SortingState>([])
@@ -82,6 +82,11 @@ export default function AbsensiTable() {
     const [rowSelection, setRowSelection] = useState({})
     const [showDialog, setShowDialog] = useState(false)
     const [date, setDate] = React.useState<DateRange | undefined>()
+    const [currentPage, setCurrentPage] = useState(1)
+    const [isMax, setIsMax] = useState(false)
+    const [inputValue, setInputValue] = useState("");
+    const [debouncedValue, setDebouncedValue] = useState(inputValue);
+    const [partialLoading, setPartialLoading] = useState(true)
 
     const columns: ColumnDef<Absensi>[] = [
         {
@@ -103,7 +108,7 @@ export default function AbsensiTable() {
         },
         {
             accessorKey: 'startDate',
-            header: 'Start Date',
+            header: 'Waktu Mulai',
             cell: ({ row }) => {
                 const date = row.getValue('startDate')
                 return (
@@ -131,7 +136,7 @@ export default function AbsensiTable() {
         // },
         {
             accessorKey: 'endDate',
-            header: 'End Date',
+            header: 'Waktu Selesai',
             cell: ({ row }) => {
                 const date = row.getValue('endDate')
                 return (
@@ -144,22 +149,8 @@ export default function AbsensiTable() {
             },
         },
         {
-            accessorKey: 'isOverTime',
-            header: 'Overtime',
-            cell: ({ row }) => (
-                <div className="text-center">
-                    {row.getValue('isOverTime') ? 'Yes' : 'No'}
-                </div>
-            ),
-        },
-        {
-            accessorKey: 'otType',
-            header: 'OT Type',
-            cell: ({ row }) => <div>{row.getValue('otType') || '-'}</div>,
-        },
-        {
             accessorKey: 'detectedSite',
-            header: 'Detected Site',
+            header: 'Site Terdeteksi',
             cell: ({ row }) => <div>{row.getValue('detectedSite') || '-'}</div>,
         },
         {
@@ -169,7 +160,7 @@ export default function AbsensiTable() {
         },
         {
             accessorKey: 'startImgUrl',
-            header: 'Start Photo',
+            header: 'Foto Mulai',
             cell: ({ row }) => {
                 const url = row.getValue('startImgUrl')
                 return url ? (
@@ -184,7 +175,7 @@ export default function AbsensiTable() {
         },
         {
             accessorKey: 'endImgUrl',
-            header: 'End Photo',
+            header: 'Foto Selesai',
             cell: ({ row }) => {
                 const url = row.getValue('endImgUrl')
                 return url ? (
@@ -199,7 +190,7 @@ export default function AbsensiTable() {
         },
         {
             accessorKey: 'startPosition',
-            header: 'Start Location',
+            header: 'Lokasi Mulai',
             cell: ({ row }) => {
                 const pos = row.original.startPosition
                 return pos ? (
@@ -218,7 +209,7 @@ export default function AbsensiTable() {
         },
         {
             accessorKey: 'endPosition',
-            header: 'End Location',
+            header: 'Lokasi Selesai',
             cell: ({ row }) => {
                 const pos = row.original.endPosition
                 return pos ? (
@@ -311,26 +302,38 @@ export default function AbsensiTable() {
         },
     ]
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(inputValue)
+        }, 300); // debounce delay
+
+        return () => clearTimeout(handler);
+    }, [inputValue]);
 
     const fetchAbsensiList = async () => {
+        setPartialLoading(true)
         try {
             const response = await ApiService.get(ApiEndpoints.ABSENSI_LIST, {
                 type: "reguler",
+                page: currentPage,
                 startDate: date?.from,
                 endDate: date?.to,
+                search: debouncedValue,
+                limit: 10,
             })
             if (response.data.data.items) {
+                setIsMax(response.data.data.isMax)
                 setData(response.data.data.items)
             }
         } catch (err: any) {
             setError(err?.message ?? "Failed to fetch absensi list")
         } finally {
-            setLoading(false)
+            setPartialLoading(false)
         }
     }
     useEffect(() => {
         fetchAbsensiList()
-    }, [date?.from?.toISOString(), date?.to?.toISOString()])
+    }, [date?.from?.toISOString(), date?.to?.toISOString(), debouncedValue, currentPage],)
 
     const table = useReactTable({
         data,
@@ -384,7 +387,7 @@ export default function AbsensiTable() {
                                     format(date.from, "LLL dd, y")
                                 )
                             ) : (
-                                <span>Pick a date</span>
+                                <span>Filter Tanggal</span>
                             )}
                         </Button>
                     </PopoverTrigger>
@@ -400,9 +403,9 @@ export default function AbsensiTable() {
                     </PopoverContent>
                 </Popover>
                 <Input
-                    placeholder="Filter by name..."
-                    value={(table.getColumn("account")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) => table.getColumn("account")?.setFilterValue(event.target.value)}
+                    placeholder="Filter berdasarkan nama..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
@@ -438,7 +441,9 @@ export default function AbsensiTable() {
                         /> */}
                 </div>
             </div>
-            <div className="rounded-md border">
+            {partialLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500"></div>
+            </div>) : <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -471,7 +476,7 @@ export default function AbsensiTable() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+            </div>}
             <div className="flex items-center justify-end space-x-2 p-4">
                 <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
@@ -481,12 +486,20 @@ export default function AbsensiTable() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => {
+                            if (!partialLoading) {
+                                setCurrentPage(currentPage - 1)
+                            }
+                        }}
+                        disabled={currentPage === 1}
                     >
                         Previous
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        if (!partialLoading) {
+                            setCurrentPage(currentPage + 1)
+                        }
+                    }} disabled={isMax}>
                         Next
                     </Button>
                 </div>

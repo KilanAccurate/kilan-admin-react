@@ -31,13 +31,18 @@ export type User = {
 export function UsersTable() {
     const [data, setData] = useState<User[]>([])
     const [userToEdit, setEditUser] = useState<User>()
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
+    const [partialLoading, setPartialLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [rowSelection, setRowSelection] = useState({})
     const [showDialog, setShowDialog] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [isMax, setIsMax] = useState(false)
+    const [inputValue, setInputValue] = useState("");
+    const [debouncedValue, setDebouncedValue] = useState(inputValue);
 
 
     // Define the columns
@@ -47,7 +52,7 @@ export function UsersTable() {
             header: ({ column }) => {
                 return (
                     <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Full Name
+                        Nama Lengkap
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 )
@@ -59,7 +64,7 @@ export function UsersTable() {
             header: ({ column }) => {
                 return (
                     <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Position
+                        Posisi
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 )
@@ -85,7 +90,7 @@ export function UsersTable() {
         },
         {
             accessorKey: "phone",
-            header: "Phone",
+            header: "No HP",
             cell: ({ row }) => <div>{row.getValue("phone")}</div>,
         },
         {
@@ -93,7 +98,7 @@ export function UsersTable() {
             header: ({ column }) => {
                 return (
                     <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Salary
+                        Gaji
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 )
@@ -149,11 +154,11 @@ export function UsersTable() {
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)}>Copy user ID</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {/* <DropdownMenuItem>View user details</DropdownMenuItem> */}
-                            <DropdownMenuItem onClick={() => {
+                            {user?.role === "admin" ? <DropdownMenuItem onClick={() => {
                                 setEditUser(user)
                                 setShowDialog(true)
-                            }}>Edit user</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user._id)}>Delete user</DropdownMenuItem>
+                            }}>Edit user</DropdownMenuItem> : null}
+                            {user?.role === "admin" ? <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user._id)}>Delete user</DropdownMenuItem> : null}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -163,17 +168,30 @@ export function UsersTable() {
 
 
     const fetchUsers = async () => {
+        setPartialLoading(true)
         try {
-            const response = await ApiService.get(ApiEndpoints.USER)
+            const response = await ApiService.get(ApiEndpoints.USER,
+                { limit: 10, page: currentPage, search: debouncedValue }
+            )
             if (response.data.data) {
+                setIsMax(response.data.pagination.isMax)
                 setData(response.data.data)
             }
         } catch (err: any) {
             setError(err?.message ?? "Failed to fetch users")
         } finally {
-            setLoading(false)
+            setPartialLoading(false)
         }
     }
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(inputValue)
+        }, 300); // debounce delay
+
+        return () => clearTimeout(handler);
+    }, [inputValue]);
+
 
     async function handleDeleteUser(userId: string) {
         try {
@@ -191,7 +209,7 @@ export function UsersTable() {
 
     useEffect(() => {
         fetchUsers()
-    }, [])
+    }, [currentPage, debouncedValue])
 
     const table = useReactTable({
         data,
@@ -224,9 +242,9 @@ export function UsersTable() {
         <div>
             <div className="flex items-center justify-between p-4">
                 <Input
-                    placeholder="Filter by name..."
-                    value={(table.getColumn("fullName")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) => table.getColumn("fullName")?.setFilterValue(event.target.value)}
+                    placeholder="Filter berdasarkan nama..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
@@ -262,7 +280,9 @@ export function UsersTable() {
                     />
                 </div>
             </div>
-            <div className="rounded-md border">
+            {partialLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500"></div>
+            </div>) : <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -295,7 +315,7 @@ export function UsersTable() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+            </div>}
             <div className="flex items-center justify-end space-x-2 p-4">
                 {/* <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
@@ -305,12 +325,20 @@ export function UsersTable() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => {
+                            if (!partialLoading) {
+                                setCurrentPage(currentPage - 1)
+                            }
+                        }}
+                        disabled={currentPage === 1}
                     >
                         Previous
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        if (!partialLoading) {
+                            setCurrentPage(currentPage + 1)
+                        }
+                    }} disabled={isMax}>
                         Next
                     </Button>
                 </div>

@@ -9,14 +9,33 @@ import AbsensiTable from "./pages/Absensi";
 import CutiTable from "./pages/Cuti";
 import LemburTable from "./pages/Lembur";
 import SiteManagementPage from "./pages/Setting";
+import ProtectedLayout from "./layouts/ProtectedLayout";
 
 function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Home />} />
+                {/* Public Route */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/admin" element={<AdminLayout />}>
+
+                {/* Protected Routes */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedLayout>
+                            <Home />
+                        </ProtectedLayout>
+                    }
+                />
+
+                <Route
+                    path="/admin"
+                    element={
+                        <ProtectedLayout>
+                            <AdminLayout />
+                        </ProtectedLayout>
+                    }
+                >
                     <Route index element={<AdminDashboard />} />
                     <Route path="users" element={<UsersTable />} />
                     <Route path="absensi" element={<AbsensiTable />} />
@@ -24,6 +43,7 @@ function App() {
                     <Route path="cuti" element={<CutiTable />} />
                     <Route path="settings" element={<SiteManagementPage />} />
                 </Route>
+
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </Router>
