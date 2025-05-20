@@ -7,7 +7,7 @@ const base64Config = import.meta.env.VITE_FIREBASE_CONFIG;
 if (!base64Config) {
     throw new Error("Firebase config not found in environment variables");
 }
-console.log(atob(base64Config))
+
 const decodedConfig = JSON.parse(
     atob(base64Config) // browser-compatible base64 decode instead of Buffer
 );

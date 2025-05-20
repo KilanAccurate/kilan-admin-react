@@ -37,6 +37,7 @@ export default function SiteManagementPage() {
     // const [sites, setSites] = useState<SiteLocation[]>([])
     const { sites, isLoading, refreshSites, carouselImages, refreshCarousel } = useGlobalContext();
     const [isUpdatingSite, setIsUpdateSite] = useState<boolean>(false);
+    const [isUpdatingImage, setIsUpdateImage] = useState<boolean>(false);
 
     // useEffect(() => {
     //     const fetchSites = async () => {
@@ -163,30 +164,23 @@ export default function SiteManagementPage() {
 
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-
+        setIsUpdateImage(true)
         const files = e.target.files;
         if (!files || files.length === 0) return;
         console.log(files[0])
         const formData = new FormData();
         formData.append('file', files[0]); // field name MUST match backend
-        for (const pair of formData.entries()) {
-            console.log(pair[0], pair[1]);
-        }
 
-        // Or to specifically check if 'file' exists:
-        if ([...formData.keys()].includes('file')) {
-            console.log("FormData contains 'file'");
-        } else {
-            console.log("FormData does NOT contain 'file'");
-        }
 
         try {
             const response = await ApiService.post(`${ApiEndpoints.GLOBAL_SETTING}${ApiEndpoints.UPLOAD_CAROUSEL_IMAGE}`, formData);
-            console.log('Uploaded image URLs:', response.data);
+            refreshCarousel()
+            setIsUpdateImage(false)
         } catch (err) {
             console.error('Upload failed:', err);
+            setIsUpdateImage(false)
         }
-
+        setIsUpdateImage(false)
         e.target.value = "";
     };
 
@@ -210,23 +204,9 @@ export default function SiteManagementPage() {
         }
 
         // ✅ Call upload here
-        handleImageUploadFromFile(file);
+        // handleImageUploadFromFile(file);
     };
 
-    const handleImageUploadFromFile = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await ApiService.post(
-                `${ApiEndpoints.GLOBAL_SETTING}${ApiEndpoints.UPLOAD_CAROUSEL_IMAGE}`,
-                formData
-            );
-            console.log('Uploaded image URLs:', response.data);
-        } catch (err) {
-            console.error('Upload failed:', err);
-        }
-    };
 
 
 
@@ -484,7 +464,7 @@ export default function SiteManagementPage() {
                         </Button>
                     </div>
 
-                    {isLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
+                    {isLoading || isUpdatingImage ? (<div className="flex justify-center items-center w-full min-h-[200px]">
                         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500"></div>
                     </div>) : carouselImages.length === 0 ? (
                         <div className="flex h-40 items-center justify-center rounded-md border border-dashed p-8 text-center">
