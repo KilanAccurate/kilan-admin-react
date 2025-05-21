@@ -93,25 +93,25 @@ export function UsersTable() {
             header: "No HP",
             cell: ({ row }) => <div>{row.getValue("phone")}</div>,
         },
-        {
-            accessorKey: "salary",
-            header: ({ column }) => {
-                return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-                        Gaji
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                )
-            },
-            cell: ({ row }) => {
-                const amount = Number.parseFloat(row.getValue("salary"))
-                const formatted = new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                }).format(amount)
-                return <div className="text-right font-medium">{formatted}</div>
-            },
-        },
+        // {
+        //     accessorKey: "salary",
+        //     header: ({ column }) => {
+        //         return (
+        //             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        //                 Gaji
+        //                 <ArrowUpDown className="ml-2 h-4 w-4" />
+        //             </Button>
+        //         )
+        //     },
+        //     cell: ({ row }) => {
+        //         const amount = Number.parseFloat(row.getValue("salary"))
+        //         const formatted = new Intl.NumberFormat("id-ID", {
+        //             style: "currency",
+        //             currency: "IDR",
+        //         }).format(amount)
+        //         return <div className="text-right font-medium">{formatted}</div>
+        //     },
+        // },
         {
             accessorKey: "role",
             header: "Role",
