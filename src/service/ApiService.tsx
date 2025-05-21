@@ -41,9 +41,17 @@ api.interceptors.response.use(
         return response;
     },
     (error: { response: any; }) => {
+        const res = error?.response;
+
+        console.error('[ERROR]', res ?? error);
+
+        if (res?.status === 401) {
+            window.dispatchEvent(new Event('logout'));
+        }
         console.error('[ERROR]', error?.response ?? error);
         return Promise.reject(error?.response ?? error);
     }
+
 );
 
 // GET with manual token injection

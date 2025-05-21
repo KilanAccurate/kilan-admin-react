@@ -24,7 +24,7 @@ export function useFCM() {
             try {
                 const permission = await Notification.requestPermission();
                 if (permission !== "granted") {
-                    console.log("Notification permission not granted");
+                    // console.log("Notification permission not granted");
                     return;
                 }
 
@@ -35,9 +35,9 @@ export function useFCM() {
                         fcmToken: currentToken,
                         fcmTokenIssuedAt: now,
                     });
-                    console.log("FCM Token registered:", currentToken);
+                    // console.log("FCM Token registered:", currentToken);
                 } else {
-                    console.log("No registration token available.");
+                    // console.log("No registration token available.");
                 }
             } catch (err) {
                 console.error("Error getting FCM token", err);
@@ -48,7 +48,7 @@ export function useFCM() {
 
         const unsubscribeMessage = onMessage(messaging, (payload) => {
             try {
-                console.log("🔥 Foreground FCM received:", payload);
+                // console.log("🔥 Foreground FCM received:", payload);
                 const title = payload.notification?.title ?? payload.data?.title ?? "No title";
                 const body = payload.notification?.body ?? payload.data?.body ?? "No body";
                 toast(title, {

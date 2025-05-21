@@ -45,7 +45,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                 setErrorMessage('Site Location not found');
             }
         } catch (error) {
-            console.error(error);
+            // console.error(error);
             setErrorMessage('Failed to load site locations');
         } finally {
             setIsLoading(false);
@@ -58,7 +58,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
             const list = response?.data?.data?.['Carousel-List'] ?? [];
             setCarouselImages(list);
         } catch (error) {
-            console.error('Failed to fetch carousel images', error);
+            // console.error('Failed to fetch carousel images', error);
         }
     };
 

@@ -136,7 +136,7 @@ export default function SiteManagementPage() {
 
         try {
             const res = await ApiService.post(ApiEndpoints.SITELOCATION, payload);
-            console.log('Site added:', res.data);
+            // console.log('Site added:', res.data);
             refreshSites();
             setIsUpdateSite(false);
         } catch (err) {
@@ -151,7 +151,7 @@ export default function SiteManagementPage() {
         setIsUpdateSite(true);
         try {
             const res = await ApiService.delete(`${ApiEndpoints.SITELOCATION}/${id}`);
-            console.log('Site deleted:', res.data);
+            // console.log('Site deleted:', res.data);
             refreshSites();
             setIsUpdateSite(false);
         } catch (err) {
@@ -167,7 +167,7 @@ export default function SiteManagementPage() {
         setIsUpdateImage(true)
         const files = e.target.files;
         if (!files || files.length === 0) return;
-        console.log(files[0])
+        // console.log(files[0])
         const formData = new FormData();
         formData.append('file', files[0]); // field name MUST match backend
 

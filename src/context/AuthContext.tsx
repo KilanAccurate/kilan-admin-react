@@ -2,6 +2,7 @@
 
 import React, {
     createContext,
+    useCallback,
     useContext,
     useEffect,
     useState,
@@ -34,6 +35,22 @@ type AuthContextType = {
     logout: () => Promise<void>;
 };
 
+const parseJwt = (token: string): { exp: number } => {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch (err) {
+        return { exp: 0 };
+    }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -42,43 +59,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<UserData | null>(null);
 
 
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        const userDataStr = localStorage.getItem('user');
-
-        if (token && userDataStr) {
-            setIsLoggedIn(true);
-            setUser(JSON.parse(userDataStr));
-        } else {
-            setIsLoggedIn(false);
-            setUser(null);
-        }
-        setIsLoading(false);
-    }, [isLoggedIn]);
-
-    const login = (userData: UserData) => {
-        localStorage.setItem('token', userData.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        setIsLoggedIn(true);
-    };
-
-    const logout = async () => {
+    const logout = useCallback(async () => {
+        setIsLoading(true);
         try {
             const messaging = getMessaging(app);
             await deleteToken(messaging);
-            console.log('FCM token deleted');
+            // // console.log('FCM token deleted');
         } catch (e) {
-            console.error('Failed to delete FCM token', e);
+            // console.error('Failed to delete FCM token', e);
         }
 
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
         setIsLoggedIn(false);
+        setIsLoading(false);
+    }, []);
 
+    // Listen to global "logout" event triggered from outside React (e.g., Axios interceptor)
+    useEffect(() => {
+        const onLogout = () => {
+            logout();
+        };
+        window.addEventListener('logout', onLogout);
+        return () => window.removeEventListener('logout', onLogout);
+    }, [logout]);
 
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userDataStr = localStorage.getItem('user');
+
+        if (token && userDataStr) {
+            try {
+                const decoded = parseJwt(token);
+                // // console.log(decoded)
+                const isExpired = decoded.exp * 1000 < Date.now();
+
+                if (isExpired) {
+                    logout();
+                    return;
+                }
+
+                setIsLoggedIn(true);
+                setUser(JSON.parse(userDataStr));
+            } catch (err) {
+                // console.error('Invalid token:', err);
+                logout();
+            }
+        } else {
+            setIsLoggedIn(false);
+            setUser(null);
+        }
+
+        setIsLoading(false);
+    }, [isLoggedIn]);
+
+    const login = (userData: UserData) => {
+        // // console.log(userData.token)
+        localStorage.setItem('token', userData.token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+        setIsLoggedIn(true);
     };
 
     return (

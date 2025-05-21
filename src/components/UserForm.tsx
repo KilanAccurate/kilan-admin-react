@@ -48,7 +48,7 @@ export function UserForm({ mode, userToEdit, onUserSaved }: UserFormProps) {
     const [open, setOpen] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [sites, setSites] = useState<SiteLocation[]>([])
+    // const [sites, setSites] = useState<SiteLocation[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const { user } = useAuth()
 
@@ -70,22 +70,22 @@ export function UserForm({ mode, userToEdit, onUserSaved }: UserFormProps) {
         defaultValues,
     })
 
-    useEffect(() => {
-        const getSiteLocations = async () => {
-            try {
-                const response = await ApiService.get(ApiEndpoints.SITELOCATION)
-                if (response?.data?.data) {
-                    setSites(response.data.data)
-                }
-            } catch (error) {
-                toast.error("Failed to fetch site locations")
-            } finally {
-                setIsLoading(false)
-            }
-        }
+    // useEffect(() => {
+    //     const getSiteLocations = async () => {
+    //         try {
+    //             const response = await ApiService.get(ApiEndpoints.SITELOCATION)
+    //             if (response?.data?.data) {
+    //                 setSites(response.data.data)
+    //             }
+    //         } catch (error) {
+    //             toast.error("Failed to fetch site locations")
+    //         } finally {
+    //             setIsLoading(false)
+    //         }
+    //     }
 
-        getSiteLocations()
-    }, [])
+    //     getSiteLocations()
+    // }, [])
 
     async function onSubmit(data: UserFormValues) {
         try {

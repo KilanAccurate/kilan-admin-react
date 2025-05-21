@@ -14,6 +14,7 @@ import { Input } from "src/components/ui/input"
 import { UserForm } from "src/components/UserForm"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "src/components/ui/table"
 import { UserFormDialog } from "src/components/UserFormDialog"
+import { useAuth } from "src/context/AuthContext"
 
 // Define the User type
 export type User = {
@@ -43,6 +44,7 @@ export function UsersTable() {
     const [isMax, setIsMax] = useState(false)
     const [inputValue, setInputValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState(inputValue);
+    const { user } = useAuth()
 
 
     // Define the columns
@@ -139,7 +141,7 @@ export function UsersTable() {
         {
             id: "actions",
             cell: ({ row }) => {
-                const user = row.original
+                const currentUser = row.original
 
                 return (
                     <DropdownMenu>
@@ -151,14 +153,14 @@ export function UsersTable() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user._id)}>Copy user ID</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(currentUser._id)}>Copy user ID</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {/* <DropdownMenuItem>View user details</DropdownMenuItem> */}
                             {user?.role === "admin" ? <DropdownMenuItem onClick={() => {
-                                setEditUser(user)
+                                setEditUser(currentUser)
                                 setShowDialog(true)
                             }}>Edit user</DropdownMenuItem> : null}
-                            {user?.role === "admin" ? <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user._id)}>Delete user</DropdownMenuItem> : null}
+                            {user?.role === "admin" ? <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(currentUser._id)}>Delete user</DropdownMenuItem> : null}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )

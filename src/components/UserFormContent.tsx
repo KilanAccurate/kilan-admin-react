@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "lucide-react"
 
 import { toast } from "sonner"
 import { formSchema, type UserFormProps, type UserFormValues } from "./UserForm"
-import type { SiteLocation } from "src/context/GlobalContext"
+import { useGlobalContext, type SiteLocation } from "src/context/GlobalContext"
 import { ApiService } from "src/service/ApiService"
 import { ApiEndpoints } from "src/service/Endpoints"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "src/components/ui/form"
@@ -23,7 +23,8 @@ export function UserFormContent({
 }: UserFormProps & { setOpen: (open: boolean) => void }) {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [sites, setSites] = useState<SiteLocation[]>([])
+    // const [sites, setSites] = useState<SiteLocation[]>([])
+    const { sites } = useGlobalContext()
     const [isLoading, setIsLoading] = useState(true)
 
     const defaultValues: Partial<UserFormValues> = {
@@ -44,23 +45,23 @@ export function UserFormContent({
         defaultValues,
     })
 
-    useEffect(() => {
-        console.log("site " + userToEdit?.site)
-        const getSiteLocations = async () => {
-            try {
-                const response = await ApiService.get(ApiEndpoints.SITELOCATION)
-                if (response?.data?.data) {
-                    setSites(response.data.data)
-                }
-            } catch (error) {
-                toast.error("Failed to fetch site locations")
-            } finally {
-                setIsLoading(false)
-            }
-        }
+    // useEffect(() => {
+    //     // console.log("site " + userToEdit?.site)
+    //     const getSiteLocations = async () => {
+    //         try {
+    //             const response = await ApiService.get(ApiEndpoints.SITELOCATION)
+    //             if (response?.data?.data) {
+    //                 setSites(response.data.data)
+    //             }
+    //         } catch (error) {
+    //             toast.error("Failed to fetch site locations")
+    //         } finally {
+    //             setIsLoading(false)
+    //         }
+    //     }
 
-        getSiteLocations()
-    }, [])
+    //     getSiteLocations()
+    // }, [])
 
     async function onSubmit(data: UserFormValues) {
         try {
@@ -102,7 +103,7 @@ export function UserFormContent({
                     control={form.control}
                     name="site"
                     render={({ field }) => {
-                        console.log("value " + field.value)
+                        // // console.log("value " + field.value)
                         const selectedSite = sites.find(st => st._id === field.value);
                         return (
                             <FormItem>
@@ -240,7 +241,7 @@ export function UserFormContent({
                     />
                 </div>
 
-                {mode === "add" && (
+                {(
                     <FormField
                         control={form.control}
                         name="password"
@@ -276,7 +277,7 @@ export function UserFormContent({
                 )}
 
                 {
-                    mode == "add" ? <FormField
+                    <FormField
                         control={form.control}
                         name="confirmPassword"
                         render={({ field }) => (
@@ -304,7 +305,7 @@ export function UserFormContent({
                                 <FormMessage />
                             </FormItem>
                         )}
-                    /> : null
+                    />
                 }
                 <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>

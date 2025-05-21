@@ -5,7 +5,6 @@ import AppSidebar from "src/components/AppSidebar";
 import DashboardHeader from "src/components/DashboardHeader";
 import { SidebarProvider, SidebarInset } from "src/components/ui/sidebar";
 
-
 export function AdminLayout() {
     return (
         <SidebarProvider>
