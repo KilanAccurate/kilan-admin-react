@@ -130,22 +130,6 @@ export default function Login() {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="site">Site</Label>
-                    <Select value={siteLocation} onValueChange={setSiteLocation}>
-                        <SelectTrigger id="site">
-                            <SelectValue placeholder="Select a site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {sites.map((site) => (
-                                <SelectItem key={site._id} value={site._id}>
-                                    {site.siteName || '-'}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
                 {errorMessage && (
                     <div className="flex items-center gap-2 text-sm text-red-600 bg-red-100 p-2 rounded-md">
                         <AlertTriangle className="h-4 w-4" />

@@ -38,6 +38,7 @@ import type { User } from './Users'
 import { ApiService } from 'src/service/ApiService'
 import { ApiEndpoints } from 'src/service/Endpoints'
 import { useAuth } from 'src/context/AuthContext'
+import { exportLemburanToXLSX } from 'src/utils/exporter'
 
 export default function LemburTable() {
     const [data, setData] = useState<Absensi[]>([])
@@ -68,8 +69,11 @@ export default function LemburTable() {
             header: 'Karyawan',
             cell: ({ row }) => {
                 const account = row.getValue('account') as User
+                const isDeleted = !!account.deletedAt;
+
                 return (
-                    <div>
+
+                    <div className={isDeleted ? "text-red-500" : ""}>
                         {`${account.fullName} (${account.nik})`}
                     </div>
                 )
@@ -147,10 +151,7 @@ export default function LemburTable() {
             cell: ({ row }) => {
                 const url = row.getValue('startImgUrl')
                 return url ? (
-                    <div></div>
-                    //   <a href={url} target="_blank" rel="noopener noreferrer">
-                    //     <ImageIcon className="h-5 w-5 text-blue-500" />
-                    //   </a>
+                    <img src={url as string} />
                 ) : (
                     '-'
                 )
@@ -162,10 +163,7 @@ export default function LemburTable() {
             cell: ({ row }) => {
                 const url = row.getValue('endImgUrl')
                 return url ? (
-                    //   <a href={url} target="_blank" rel="noopener noreferrer">
-                    //     <ImageIcon className="h-5 w-5 text-blue-500" />
-                    //   </a>
-                    <div></div>
+                    <img src={url as string} />
                 ) : (
                     '-'
                 )
@@ -177,14 +175,7 @@ export default function LemburTable() {
             cell: ({ row }) => {
                 const pos = row.original.startPosition
                 return pos ? (
-                    pos.addressLine1
-                    //   <a
-                    //     href={`https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}`}
-                    //     target="_blank"
-                    //     rel="noopener noreferrer"
-                    //   >
-                    //     <MapPin className="h-5 w-5 text-green-600" />
-                    //   </a>
+                    <div>{pos.lat},{pos.lon}</div>
                 ) : (
                     '-'
                 )
@@ -196,14 +187,7 @@ export default function LemburTable() {
             cell: ({ row }) => {
                 const pos = row.original.endPosition
                 return pos ? (
-                    pos.addressLine1
-                    //   <a
-                    //     href={`https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}`}
-                    //     target="_blank"
-                    //     rel="noopener noreferrer"
-                    //   >
-                    //     <MapPin className="h-5 w-5 text-red-600" />
-                    //   </a>
+                    <div>{pos.lat},{pos.lon}</div>
                 ) : (
                     '-'
                 )
@@ -433,7 +417,11 @@ export default function LemburTable() {
                     onChange={(e) => setInputValue(e.target.value)}
                     className="max-w-sm"
                 />
+
                 <div className="flex items-center gap-2">
+                    {data.length == 0 ? null : <Button variant="outline" onClick={() => exportLemburanToXLSX(data)}>
+                        Export XLSX
+                    </Button>}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">

@@ -34,6 +34,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ApiService } from "src/service/ApiService"
 import { ApiEndpoints } from "src/service/Endpoints"
 import { useAuth } from "src/context/AuthContext"
+import { exportCutiToXLSX } from "src/utils/exporter"
 
 
 export interface ApprovalData {
@@ -54,7 +55,7 @@ export interface Cuti {
     poh: 'lokal' | 'nonLokal'
     rosterCuti: string
     tujuanCuti: string
-    pekerjaanDiserahkanPada: string[]
+    pekerjaanDiserahkanPada: User[]
     transport: string
     sisaHariCuti: number
     keterangan?: string
@@ -93,8 +94,11 @@ export default function CutiTable() {
             header: 'Karyawan',
             cell: ({ row }) => {
                 const account = row.getValue('account') as User
+                const isDeleted = !!account.deletedAt;
+
                 return (
-                    <div>
+
+                    <div className={isDeleted ? "text-red-500" : ""}>
                         {`${account.fullName} (${account.nik})`}
                     </div>
                 )
@@ -147,7 +151,7 @@ export default function CutiTable() {
 
                 return (
                     <div>
-                        {userList.map(user => user.fullName).join(", ")}
+                        {userList.map(user => `${user.fullName}(${user.nik})`).join(", ")}
                     </div>
                 );
             },
@@ -266,39 +270,6 @@ export default function CutiTable() {
                 </AlertDialog>
             }
         },
-        // {
-        //     id: "actions",
-        //     cell: ({ row }) => {
-        //         const cuti = row.original
-
-        //         return (
-        //             <DropdownMenu>
-        //                 <DropdownMenuTrigger asChild>
-        //                     <Button variant="ghost" className="h-8 w-8 p-0">
-        //                         <span className="sr-only">Open menu</span>
-        //                         <MoreHorizontal className="h-4 w-4" />
-        //                     </Button>
-        //                 </DropdownMenuTrigger>
-        //                 <DropdownMenuContent align="end">
-        //                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        //                     <DropdownMenuItem onClick={() => navigator.clipboard.writeText(cuti._id)}>Copy ID</DropdownMenuItem>
-        //                     <DropdownMenuSeparator />
-        //                     <DropdownMenuItem onClick={() => {
-        //                         // setEditCuti(cuti)
-        //                         // setShowDialog(true)
-        //                         actionCuti(cuti._id, "2025-05-14T10:00:00.000Z", "approved")
-        //                     }}>Approve</DropdownMenuItem>
-        //                     <DropdownMenuItem onClick={() => {
-        //                         // setEditCuti(cuti)
-        //                         // setShowDialog(true)
-        //                         actionCuti(cuti._id, "2025-05-14T10:00:00.000Z", "rejected")
-        //                     }}>Reject</DropdownMenuItem>
-        //                     <DropdownMenuItem className="text-red-600" >Delete</DropdownMenuItem>
-        //                 </DropdownMenuContent>
-        //             </DropdownMenu>
-        //         )
-        //     },
-        // },
     ]
 
     useEffect(() => {
@@ -402,6 +373,9 @@ export default function CutiTable() {
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
+                    {data.length == 0 ? null : <Button variant="outline" onClick={() => exportCutiToXLSX(data)}>
+                        Export XLSX
+                    </Button>}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">

@@ -26,6 +26,7 @@ import { Input } from 'src/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'src/components/ui/table'
 import { Calendar } from 'src/components/ui/calendar'
 import type { ApprovalData } from 'src/models/ApprovalData'
+import { exportAbsensiToXLSX } from 'src/utils/exporter'
 
 export interface GeopifyLocation {
     name?: string
@@ -99,8 +100,11 @@ export default function AbsensiTable() {
             header: 'Karyawan',
             cell: ({ row }) => {
                 const account = row.getValue('account') as User
+                const isDeleted = !!account.deletedAt;
+
                 return (
-                    <div>
+
+                    <div className={isDeleted ? "text-red-500" : ""}>
                         {`${account.fullName} (${account.nik})`}
                     </div>
                 )
@@ -164,10 +168,7 @@ export default function AbsensiTable() {
             cell: ({ row }) => {
                 const url = row.getValue('startImgUrl')
                 return url ? (
-                    <div></div>
-                    //   <a href={url} target="_blank" rel="noopener noreferrer">
-                    //     <ImageIcon className="h-5 w-5 text-blue-500" />
-                    //   </a>
+                    <img src={url as string} />
                 ) : (
                     '-'
                 )
@@ -179,10 +180,7 @@ export default function AbsensiTable() {
             cell: ({ row }) => {
                 const url = row.getValue('endImgUrl')
                 return url ? (
-                    //   <a href={url} target="_blank" rel="noopener noreferrer">
-                    //     <ImageIcon className="h-5 w-5 text-blue-500" />
-                    //   </a>
-                    <div></div>
+                    <img src={url as string} />
                 ) : (
                     '-'
                 )
@@ -194,14 +192,7 @@ export default function AbsensiTable() {
             cell: ({ row }) => {
                 const pos = row.original.startPosition
                 return pos ? (
-                    pos.addressLine1
-                    //   <a
-                    //     href={`https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}`}
-                    //     target="_blank"
-                    //     rel="noopener noreferrer"
-                    //   >
-                    //     <MapPin className="h-5 w-5 text-green-600" />
-                    //   </a>
+                    <div>{pos.lat},{pos.lon}</div>
                 ) : (
                     '-'
                 )
@@ -213,14 +204,7 @@ export default function AbsensiTable() {
             cell: ({ row }) => {
                 const pos = row.original.endPosition
                 return pos ? (
-                    pos.addressLine1
-                    //   <a
-                    //     href={`https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}`}
-                    //     target="_blank"
-                    //     rel="noopener noreferrer"
-                    //   >
-                    //     <MapPin className="h-5 w-5 text-red-600" />
-                    //   </a>
+                    <div>{pos.lat},{pos.lon}</div>
                 ) : (
                     '-'
                 )
@@ -409,6 +393,9 @@ export default function AbsensiTable() {
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
+                    {data.length == 0 ? null : <Button variant="outline" onClick={() => exportAbsensiToXLSX(data)}>
+                        Export XLSX
+                    </Button>}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">

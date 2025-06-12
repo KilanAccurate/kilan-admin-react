@@ -15,6 +15,7 @@ import { UserForm } from "src/components/UserForm"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "src/components/ui/table"
 import { UserFormDialog } from "src/components/UserFormDialog"
 import { useAuth } from "src/context/AuthContext"
+import { exportToCSV, exportToCsvUsers, exportToXLSXUsers } from "src/utils/exporter"
 
 // Define the User type
 export type User = {
@@ -27,6 +28,7 @@ export type User = {
     phone: string
     salary: number
     role: string
+    deletedAt: Date
 }
 
 export function UsersTable() {
@@ -59,7 +61,16 @@ export function UsersTable() {
                     </Button>
                 )
             },
-            cell: ({ row }) => <div>{row.getValue("fullName")}</div>,
+            cell: ({ row }) => {
+                const user = row.original; // full object from your data
+                const isDeleted = !!user.deletedAt;
+
+                return (
+                    <div className={isDeleted ? "text-red-500" : ""}>
+                        {row.getValue("fullName")}
+                    </div>
+                );
+            },
         },
         {
             accessorKey: "position",
@@ -95,25 +106,6 @@ export function UsersTable() {
             header: "No HP",
             cell: ({ row }) => <div>{row.getValue("phone")}</div>,
         },
-        // {
-        //     accessorKey: "salary",
-        //     header: ({ column }) => {
-        //         return (
-        //             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        //                 Gaji
-        //                 <ArrowUpDown className="ml-2 h-4 w-4" />
-        //             </Button>
-        //         )
-        //     },
-        //     cell: ({ row }) => {
-        //         const amount = Number.parseFloat(row.getValue("salary"))
-        //         const formatted = new Intl.NumberFormat("id-ID", {
-        //             style: "currency",
-        //             currency: "IDR",
-        //         }).format(amount)
-        //         return <div className="text-right font-medium">{formatted}</div>
-        //     },
-        // },
         {
             accessorKey: "role",
             header: "Role",
@@ -274,6 +266,9 @@ export function UsersTable() {
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    {data.length == 0 ? null : <Button variant="outline" onClick={() => exportToXLSXUsers(data, "users")}>
+                        Export XLSX
+                    </Button>}
                     <UserForm
                         mode="add"
                         onUserSaved={() => {
