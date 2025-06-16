@@ -118,7 +118,7 @@ export default function AbsensiTable() {
                 return (
                     <div>
                         {typeof date === 'string' || typeof date === 'number' || date instanceof Date
-                            ? new Date(date).toLocaleString('id-ID')
+                            ? new Date(date).toDateString()
                             : '-'}
                     </div>
                 )
@@ -146,7 +146,7 @@ export default function AbsensiTable() {
                 return (
                     <div>
                         {date && (typeof date === 'string' || typeof date === 'number' || date instanceof Date)
-                            ? new Date(date).toLocaleString('id-ID')
+                            ? new Date(date).toDateString()
                             : '-'}
                     </div>
                 )
