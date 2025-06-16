@@ -87,7 +87,7 @@ export default function LemburTable() {
                 return (
                     <div>
                         {typeof date === 'string' || typeof date === 'number' || date instanceof Date
-                            ? new Date(date).toDateString()
+                            ? new Date(date).toUTCString()
                             : '-'}
                     </div>
                 )
@@ -101,7 +101,7 @@ export default function LemburTable() {
                 return (
                     <div>
                         {date && (typeof date === 'string' || typeof date === 'number' || date instanceof Date)
-                            ? new Date(date).toDateString()
+                            ? new Date(date).toUTCString()
                             : '-'}
                     </div>
                 )
@@ -115,7 +115,7 @@ export default function LemburTable() {
                 return (
                     <div>
                         {date && (typeof date === 'string' || typeof date === 'number' || date instanceof Date)
-                            ? new Date(date).toDateString()
+                            ? new Date(date).toUTCString()
                             : '-'}
                     </div>
                 )
