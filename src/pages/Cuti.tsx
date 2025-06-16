@@ -109,7 +109,7 @@ export default function CutiTable() {
             header: "Tanggal Masuk",
             cell: ({ row }) => {
                 const date = new Date(row.getValue("tanggalMasuk"))
-                return <div>{date.toLocaleDateString("id-ID")}</div>
+                return <div>{date.toDateString()}</div>
             },
         },
         {
@@ -117,7 +117,7 @@ export default function CutiTable() {
             header: "Mulai Cuti",
             cell: ({ row }) => {
                 const date = new Date(row.getValue("mulaiCuti"))
-                return <div>{date.toLocaleDateString("id-ID")}</div>
+                return <div>{date.toDateString()}</div>
             },
         },
         {
@@ -125,7 +125,7 @@ export default function CutiTable() {
             header: "Kembali Bekerja",
             cell: ({ row }) => {
                 const date = new Date(row.getValue("kembaliBekerja"))
-                return <div>{date.toLocaleDateString("id-ID")}</div>
+                return <div>{date.toDateString()}</div>
             },
         },
         {
