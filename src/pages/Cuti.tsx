@@ -35,6 +35,7 @@ import { ApiService } from "src/service/ApiService"
 import { ApiEndpoints } from "src/service/Endpoints"
 import { useAuth } from "src/context/AuthContext"
 import { exportCutiToXLSX } from "src/utils/exporter"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "src/components/ui/select"
 
 
 export interface ApprovalData {
@@ -66,7 +67,6 @@ export interface Cuti {
     updatedAt: Date
 }
 
-
 export default function CutiTable() {
     const [data, setData] = useState<Cuti[]>([])
     // const [userToEdit, setEditUser] = useState<Cuti>()
@@ -83,6 +83,7 @@ export default function CutiTable() {
     const [inputValue, setInputValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState(inputValue);
     const [partialLoading, setPartialLoading] = useState(true)
+    const [limit, setLimit] = useState(10);
     const columns: ColumnDef<Cuti>[] = [
         {
             accessorKey: 'account',
@@ -270,7 +271,50 @@ export default function CutiTable() {
                 </AlertDialog>
             }
         },
+        {
+            id: 'actions',
+            cell: ({ row }) => {
+                const absensi = row.original
+
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(absensi._id)}>
+                                Copy ID
+                            </DropdownMenuItem>
+                            {user?.role === "admin" ? <DropdownMenuItem className='text-red-600' onClick={() => deleteCuti(absensi._id)}>
+                                Delete
+                            </DropdownMenuItem> : null}
+                            {/* <DropdownMenuSeparator /> */}
+                            {/* <DropdownMenuItem className="text-red-600">Lihat Detail</DropdownMenuItem> */}
+                            {/* <DropdownMenuItem className="text-red-600">Hapus</DropdownMenuItem> */}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
+        },
     ]
+
+    const deleteCuti = async (id: string) => {
+        setPartialLoading(true)
+        try {
+            const response = await ApiService.delete(ApiEndpoints.CUTI + "/" + id)
+            if (response.data.status == "success") {
+                fetchCutiList()
+            }
+        } catch (err: any) {
+            setError(err?.message ?? "Failed to delete absensi")
+        } finally {
+            setPartialLoading(false)
+        }
+    }
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -290,7 +334,7 @@ export default function CutiTable() {
                 status: "all",
                 page: currentPage,
                 search: debouncedValue,
-                limit: 10,
+                limit: limit,
             })
             if (response.data.data.items) {
                 setIsMax(response.data.data.isMax)
@@ -334,7 +378,7 @@ export default function CutiTable() {
 
     useEffect(() => {
         fetchCutiList()
-    }, [debouncedValue, currentPage])
+    }, [debouncedValue, currentPage, limit])
 
     const table = useReactTable({
         data,
@@ -373,6 +417,24 @@ export default function CutiTable() {
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
+                    <Select
+                        value={limit.toString()}
+                        onValueChange={(value) => {
+                            setLimit(Number(value));
+                            setCurrentPage(1); // reset pagination when limit changes
+                        }}
+                    >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder={`Tampilkan ${limit}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 25, 50, 100].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                    Tampilkan {value}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     {data.length == 0 ? null : <Button variant="outline" onClick={() => exportCutiToXLSX(data)}>
                         Export XLSX
                     </Button>}

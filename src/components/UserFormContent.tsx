@@ -233,6 +233,7 @@ export function UserFormContent({
                                         <SelectItem value="manager">Manager</SelectItem>
                                         <SelectItem value="hrd">HRD</SelectItem>
                                         <SelectItem value="staff">Staff</SelectItem>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

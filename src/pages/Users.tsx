@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "s
 import { UserFormDialog } from "src/components/UserFormDialog"
 import { useAuth } from "src/context/AuthContext"
 import { exportToCSV, exportToCsvUsers, exportToXLSXUsers } from "src/utils/exporter"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "src/components/ui/select"
 
 // Define the User type
 export type User = {
@@ -47,6 +48,8 @@ export function UsersTable() {
     const [inputValue, setInputValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState(inputValue);
     const { user } = useAuth()
+    const [limit, setLimit] = useState(10);
+
 
 
     // Define the columns
@@ -162,21 +165,24 @@ export function UsersTable() {
 
 
     const fetchUsers = async () => {
-        setPartialLoading(true)
+        setPartialLoading(true);
         try {
-            const response = await ApiService.get(ApiEndpoints.USER,
-                { limit: 10, page: currentPage, search: debouncedValue }
-            )
+            const response = await ApiService.get(ApiEndpoints.USER, {
+                limit,
+                page: currentPage,
+                search: debouncedValue,
+            });
             if (response.data.data) {
-                setIsMax(response.data.pagination.isMax)
-                setData(response.data.data)
+                setIsMax(response.data.pagination.isMax);
+                setData(response.data.data);
             }
         } catch (err: any) {
-            setError(err?.message ?? "Failed to fetch users")
+            setError(err?.message ?? "Failed to fetch users");
         } finally {
-            setPartialLoading(false)
+            setPartialLoading(false);
         }
-    }
+    };
+
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -203,24 +209,33 @@ export function UsersTable() {
 
     useEffect(() => {
         fetchUsers()
-    }, [currentPage, debouncedValue])
+    }, [currentPage, debouncedValue, limit])
 
     const table = useReactTable({
         data,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
+        onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        onRowSelectionChange: setRowSelection,
+
+        // ✅ Use manual pagination
+        manualPagination: true,
+
+        // ✅ Provide pagination state
         state: {
             sorting,
             columnFilters,
             rowSelection,
+            pagination: {
+                pageIndex: currentPage - 1, // table uses 0-based index
+                pageSize: limit,
+            },
         },
-    })
+    });
+
 
     if (loading) {
         return (<div className="flex justify-center items-center w-full min-h-[200px]">
@@ -242,6 +257,25 @@ export function UsersTable() {
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
+                    <Select
+                        value={limit.toString()}
+                        onValueChange={(value) => {
+                            setLimit(Number(value));
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 25, 50, 100].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                    Tampilkan {value}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">
@@ -280,6 +314,9 @@ export function UsersTable() {
             {partialLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500"></div>
             </div>) : <div className="rounded-md border">
+                {/* <p className="text-sm px-4">
+                    Rows fetched: {data.length} | Rows rendered: {table.getRowModel().rows.length}
+                </p> */}
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (

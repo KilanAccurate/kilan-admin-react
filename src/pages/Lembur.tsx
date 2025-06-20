@@ -39,6 +39,8 @@ import { ApiService } from 'src/service/ApiService'
 import { ApiEndpoints } from 'src/service/Endpoints'
 import { useAuth } from 'src/context/AuthContext'
 import { exportLemburanToXLSX } from 'src/utils/exporter'
+import type { SiteLocation } from 'src/context/GlobalContext'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 
 export default function LemburTable() {
     const [data, setData] = useState<Absensi[]>([])
@@ -56,6 +58,7 @@ export default function LemburTable() {
     const [inputValue, setInputValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState(inputValue);
     const [partialLoading, setPartialLoading] = useState(true)
+    const [limit, setLimit] = useState(10);
 
 
     const columns: ColumnDef<Absensi>[] = [
@@ -136,9 +139,12 @@ export default function LemburTable() {
             cell: ({ row }) => <div>{row.getValue('otType') || '-'}</div>,
         },
         {
-            accessorKey: 'detectedSite',
+            accessorKey: 'siteLocation',
             header: 'Site Terdeteksi',
-            cell: ({ row }) => <div>{row.getValue('detectedSite') || '-'}</div>,
+            cell: ({ row }) => {
+                const site = row.getValue('siteLocation') as SiteLocation
+                return <div>{site?.siteName ?? '-'}</div>
+            },
         },
         {
             accessorKey: 'remarks',
@@ -292,6 +298,35 @@ export default function LemburTable() {
                 </AlertDialog>
             }
         },
+        {
+            id: 'actions',
+            cell: ({ row }) => {
+                const absensi = row.original
+
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(absensi._id)}>
+                                Copy ID
+                            </DropdownMenuItem>
+                            {user?.role === "admin" ? <DropdownMenuItem className='text-red-600' onClick={() => deleteAbsensi(absensi._id)}>
+                                Delete
+                            </DropdownMenuItem> : null}
+                            {/* <DropdownMenuSeparator /> */}
+                            {/* <DropdownMenuItem className="text-red-600">Lihat Detail</DropdownMenuItem> */}
+                            {/* <DropdownMenuItem className="text-red-600">Hapus</DropdownMenuItem> */}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
+        },
     ]
     const actionLembur = async (uid: string, approvedDate: string, approvalStatus: string) => {
         try {
@@ -327,7 +362,7 @@ export default function LemburTable() {
                 endDate: date?.to,
                 search: debouncedValue,
                 page: currentPage,
-                limit: 10,
+                limit: limit,
             })
             if (response.data.data.items) {
                 setIsMax(response.data.data.isMax)
@@ -341,25 +376,46 @@ export default function LemburTable() {
     }
     useEffect(() => {
         fetchAbsensiList()
-    }, [date?.from?.toISOString(), date?.to?.toISOString(), debouncedValue, currentPage])
+    }, [date?.from?.toISOString(), date?.to?.toISOString(), debouncedValue, currentPage, limit])
 
+    const deleteAbsensi = async (id: string) => {
+        setPartialLoading(true)
+        try {
+            const response = await ApiService.delete(ApiEndpoints.ABSENSI + "/" + id)
+            if (response.data.status == "success") {
+                fetchAbsensiList()
+            }
+        } catch (err: any) {
+            setError(err?.message ?? "Failed to delete absensi")
+        } finally {
+            setPartialLoading(false)
+        }
+    }
 
     const table = useReactTable({
         data,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
+        onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        onRowSelectionChange: setRowSelection,
+
+        // ✅ Use manual pagination
+        manualPagination: true,
+
+        // ✅ Provide pagination state
         state: {
             sorting,
             columnFilters,
             rowSelection,
+            pagination: {
+                pageIndex: currentPage - 1, // table uses 0-based index
+                pageSize: limit,
+            },
         },
-    })
+    });
 
     if (loading) {
         return (<div className="flex justify-center items-center w-full min-h-[200px]">
@@ -419,6 +475,24 @@ export default function LemburTable() {
                 />
 
                 <div className="flex items-center gap-2">
+                    <Select
+                        value={limit.toString()}
+                        onValueChange={(value) => {
+                            setLimit(Number(value));
+                            setCurrentPage(1); // reset pagination when limit changes
+                        }}
+                    >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder={`Tampilkan ${limit}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 25, 50, 100].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                    Tampilkan {value}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     {data.length == 0 ? null : <Button variant="outline" onClick={() => exportLemburanToXLSX(data)}>
                         Export XLSX
                     </Button>}

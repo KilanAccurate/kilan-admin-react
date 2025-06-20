@@ -27,6 +27,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 's
 import { Calendar } from 'src/components/ui/calendar'
 import type { ApprovalData } from 'src/models/ApprovalData'
 import { exportAbsensiToXLSX } from 'src/utils/exporter'
+import { useAuth } from 'src/context/AuthContext'
+import type { SiteLocation } from 'src/context/GlobalContext'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 
 export interface GeopifyLocation {
     name?: string
@@ -88,6 +91,9 @@ export default function AbsensiTable() {
     const [inputValue, setInputValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState(inputValue);
     const [partialLoading, setPartialLoading] = useState(true)
+    const { user } = useAuth();
+    const [limit, setLimit] = useState(10);
+
 
     const columns: ColumnDef<Absensi>[] = [
         {
@@ -153,9 +159,12 @@ export default function AbsensiTable() {
             },
         },
         {
-            accessorKey: 'detectedSite',
+            accessorKey: 'siteLocation',
             header: 'Site Terdeteksi',
-            cell: ({ row }) => <div>{row.getValue('detectedSite') || '-'}</div>,
+            cell: ({ row }) => {
+                const site = row.getValue('siteLocation') as SiteLocation
+                return <div>{site?.siteName ?? '-'}</div>
+            },
         },
         {
             accessorKey: 'remarks',
@@ -276,7 +285,10 @@ export default function AbsensiTable() {
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(absensi._id)}>
                                 Copy ID
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {user?.role === "admin" ? <DropdownMenuItem className='text-red-600' onClick={() => deleteAbsensi(absensi._id)}>
+                                Delete
+                            </DropdownMenuItem> : null}
+                            {/* <DropdownMenuSeparator /> */}
                             {/* <DropdownMenuItem className="text-red-600">Lihat Detail</DropdownMenuItem> */}
                             {/* <DropdownMenuItem className="text-red-600">Hapus</DropdownMenuItem> */}
                         </DropdownMenuContent>
@@ -303,7 +315,7 @@ export default function AbsensiTable() {
                 startDate: date?.from,
                 endDate: date?.to,
                 search: debouncedValue,
-                limit: 10,
+                limit: limit,
             })
             if (response.data.data.items) {
                 setIsMax(response.data.data.isMax)
@@ -315,26 +327,49 @@ export default function AbsensiTable() {
             setPartialLoading(false)
         }
     }
+
+    const deleteAbsensi = async (id: string) => {
+        setPartialLoading(true)
+        try {
+            const response = await ApiService.delete(ApiEndpoints.ABSENSI + "/" + id)
+            if (response.data.status == "success") {
+                fetchAbsensiList()
+            }
+        } catch (err: any) {
+            setError(err?.message ?? "Failed to delete absensi")
+        } finally {
+            setPartialLoading(false)
+        }
+    }
+
     useEffect(() => {
         fetchAbsensiList()
-    }, [date?.from?.toISOString(), date?.to?.toISOString(), debouncedValue, currentPage],)
+    }, [date?.from?.toISOString(), date?.to?.toISOString(), debouncedValue, currentPage, limit],)
 
     const table = useReactTable({
         data,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
+        onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        onRowSelectionChange: setRowSelection,
+
+        // ✅ Use manual pagination
+        manualPagination: true,
+
+        // ✅ Provide pagination state
         state: {
             sorting,
             columnFilters,
             rowSelection,
+            pagination: {
+                pageIndex: currentPage - 1, // table uses 0-based index
+                pageSize: limit,
+            },
         },
-    })
+    });
 
     if (loading) {
         return (<div className="flex justify-center items-center w-full min-h-[200px]">
@@ -393,6 +428,25 @@ export default function AbsensiTable() {
                     className="max-w-sm"
                 />
                 <div className="flex items-center gap-2">
+                    <Select
+                        value={limit.toString()}
+                        onValueChange={(value) => {
+                            setLimit(Number(value));
+                            setCurrentPage(1); // reset pagination when limit changes
+                        }}
+                    >
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder={`Tampilkan ${limit}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 25, 50, 100].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                    Tampilkan {value}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     {data.length == 0 ? null : <Button variant="outline" onClick={() => exportAbsensiToXLSX(data)}>
                         Export XLSX
                     </Button>}
@@ -420,12 +474,7 @@ export default function AbsensiTable() {
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    {/* <UserForm
-                            mode="add"
-                            onUserSaved={() => {
-                                fetchCutiList()
-                            }}
-                        /> */}
+
                 </div>
             </div>
             {partialLoading ? (<div className="flex justify-center items-center w-full min-h-[200px]">
@@ -491,29 +540,7 @@ export default function AbsensiTable() {
                     </Button>
                 </div>
             </div>
-            {/* <UserFormDialog
-                    open={showDialog}
-                    setOpen={setShowDialog}
-                    mode="edit"
-                    userToEdit={{
-                        _id: userToEdit?._id ?? '',
-                        fullName: userToEdit?.fullName,
-                        position: userToEdit?.position,
-                        site: userToEdit?.site?._id,
-                        department: userToEdit?.department,
-                        nik: userToEdit?.nik,
-                        phone: userToEdit?.phone,
-                        salary: userToEdit?.salary,
-                        password: '',
-                        confirmPassword: '',
-                        role: userToEdit?.role,
-    
-                    }}
-                    onUserSaved={() => {
-                        setShowDialog(false)
-                        fetchCutiList()
-                    }}
-                /> */}
+
         </div>
     )
 }

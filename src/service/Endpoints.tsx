@@ -12,5 +12,7 @@ export enum ApiEndpoints {
     UPDATEFCM = '/auth/update-fcm-token',
     GLOBAL_SETTING = '/global-setting',
     UPLOAD_CAROUSEL_IMAGE = '/upload-carousel',
+    ABSENSI = '/absensi',
+    CUTI = '/cuti',
     // ...add more as needed
 }
